@@ -22,7 +22,8 @@ const appendPriceToCsv = (dateStr, pricePerGramLKR) => {
 
         const newRow = {
             Date: dateStr,
-            LKR_per_Oz: pricePerOz.toFixed(2) // Ensure it's a string with 2 decimal places
+            LKR_per_Oz: pricePerOz.toFixed(2),
+            LKR_per_XAU_Inverse:0// Ensure it's a string with 2 decimal places
         };
         
         // Use append mode for the write stream
@@ -41,5 +42,11 @@ const appendPriceToCsv = (dateStr, pricePerGramLKR) => {
         csvStream.end();
     });
 };
-
-module.exports = { appendPriceToCsv };
+/*
+ * @param {Date} date
+ * @returns {string}
+ */
+const formatDateMDY = (date) => {
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+};
+module.exports = { appendPriceToCsv,formatDateMDY };
