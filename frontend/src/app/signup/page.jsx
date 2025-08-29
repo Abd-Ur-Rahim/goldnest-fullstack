@@ -62,8 +62,12 @@ export default function SignupPage() {
       router.push(`/verify-email?userId=${data.userId}&email=${encodeURIComponent(email)}`);
 
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed. Please try again.');
-      setLoading(false);
+        console.error("Signup Error Response:", err.response);
+          
+        // Set a more informative error message for the UI
+        const message = err.response?.data?.message || 'Signup failed. Please try again.';
+        setError(message);
+        setLoading(false);
     }
   };
 
