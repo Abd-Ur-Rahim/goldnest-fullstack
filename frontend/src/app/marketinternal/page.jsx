@@ -37,30 +37,40 @@ export default function MarketInternalPage() {
     const chartInstanceRef = useRef(null);
 
     // Data Fetching
-    useEffect(() => {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+
+    // Extract fetching logic into function
+    const fetchData = useCallback(async () => {
         setLoading(true);
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+        try {
+            const [summaryRes, historyRes, outlookRes] = await Promise.all([
+                axios.get(`${backendUrl}/api/market/gold-summary`),
+                axios.get(`${backendUrl}/api/market/historical-data`),
+                axios.get(`${backendUrl}/api/ai/market-outlook`),
+            ]);
+            setMarketSummary(summaryRes.data);
+            setHistoricalData(historyRes.data);
+            setAiOutlook(outlookRes.data.outlook || 'AI analysis currently unavailable.');
+            setError('');
+        } catch (err) {
+            console.error('Error fetching market data:', err);
+            setError('Failed to load market data. Please try refreshing.');
+        } finally {
+            setLoading(false);
+        }
+    }, [backendUrl]);
 
-        const fetchData = async () => {
-            try {
-                const [summaryRes, historyRes, outlookRes] = await Promise.all([
-                    axios.get(`${backendUrl}/api/market/gold-summary`),
-                    axios.get(`${backendUrl}/api/market/historical-data`),
-                    axios.get(`${backendUrl}/api/ai/market-outlook`),
-                ]);
-                setMarketSummary(summaryRes.data);
-                setHistoricalData(historyRes.data);
-                setAiOutlook(outlookRes.data.outlook || 'AI analysis currently unavailable.');
-            } catch (err) {
-                console.error('Error fetching market data:', err);
-                setError('Failed to load market data. Please try refreshing.');
-            } finally {
-                setLoading(false);
-            }
-        };
+    useEffect(() => {
+        fetchData(); // Initial fetch
 
-        fetchData();
-    }, []);
+        // Set up interval for periodic fetching
+        const intervalId = setInterval(() => {
+            fetchData();
+        }, 30000); // 30 seconds
+
+        // Cleanup on unmount
+        return () => clearInterval(intervalId);
+    }, [fetchData]);
 
     // Chart Rendering Logic
     const renderChart = useCallback(() => {
@@ -240,4 +250,5 @@ export default function MarketInternalPage() {
             <FooterInternal />
         </>
     );
+
 }
