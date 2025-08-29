@@ -41,7 +41,7 @@ const AdminLayout = ({ children }) => {
                     await axios.get(`${backendUrl}/api/admin/auth/validate-session`, config);
                 } catch (error) {
                     // --- THIS IS THE FIX ---
-                    console.error("Session validation failed.", error.response?.data?.message || error.message);
+                    // console.error("Session validation failed.", error.response?.data?.message || error.message);
                     localStorage.removeItem('adminInfo');
 
                     // 1. Define the redirect function

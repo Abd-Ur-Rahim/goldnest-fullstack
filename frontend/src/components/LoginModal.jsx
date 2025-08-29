@@ -145,7 +145,7 @@ export default function LoginModal() {
                 }}>
                     <div style={{ fontWeight: 600, color: '#6b4005', marginBottom: '6px' }}>🔑 Demo Credentials</div>
                     <div><strong>Email:</strong> test@goldnest.lk</div>
-                    <div><strong>Password:</strong> goldnest-test</div>
+                    <div><strong>Password:</strong> 12345678</div>
                 </div>
 
                 <button className="social-btn" onClick={handleGoogleSignIn}>

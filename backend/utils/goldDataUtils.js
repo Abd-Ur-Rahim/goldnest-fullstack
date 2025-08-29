@@ -57,7 +57,8 @@ function loadGoldData() {
          })
          // Filter out records with invalid dates *before* sorting
          .filter(r => r.DateObj !== null)
-         .sort((a, b) => b.DateObj.getTime() - a.DateObj.getTime()); // Sort by Date object time (newest first)
+         parsedRecords.sort((a, b) => a.DateObj.getTime() - b.DateObj.getTime());
+         parsedRecords.reverse(); // Now, latest record is at index 0// Sort by Date object time (newest first)
 
         goldDataCache = parsedRecords;
         // console.log("Loaded and sorted Gold Data:", goldDataCache.slice(0, 5)); // Uncomment for Debugging
