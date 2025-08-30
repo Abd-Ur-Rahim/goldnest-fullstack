@@ -68,7 +68,7 @@ const makeInvestment = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const marketSummary = getGoldMarketSummary(); // Assuming sync or handles its own async
+        const marketSummary = await getGoldMarketSummary(); // Assuming sync or handles its own async
         if (!marketSummary || !marketSummary.latestPricePerGram || marketSummary.latestPricePerGram <= 0) {
             console.error("Investment Error: Could not fetch valid market price.");
             return res.status(500).json({ message: 'Could not fetch current gold market price. Please try again later.' });

@@ -28,7 +28,7 @@ const sellGold = async (req, res) => {
 
     try {
         // --- Get Current Gold Price ---
-        const marketSummary = getGoldMarketSummary(); // In a real app, fetch this dynamically if needed
+        const marketSummary = await getGoldMarketSummary(); // In a real app, fetch this dynamically if needed
         // Assuming this holds the *selling* price (bid price) the platform offers
         const currentPricePerGram = marketSummary.latestPricePerGram; // TODO: Distinguish between buy/sell price if needed
 

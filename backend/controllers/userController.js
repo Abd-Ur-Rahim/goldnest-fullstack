@@ -58,7 +58,7 @@ const getUserProfile = async (req, res) => {
             ? (totalInvestedLKR / totalGramsPurchased)
             : 0;
 
-        const marketSummary = getGoldMarketSummary();
+        const marketSummary = await getGoldMarketSummary();
         const currentPricePerGram = marketSummary?.latestPricePerGram || 0;
 
         const currentValueLKR = user.goldBalanceGrams * currentPricePerGram;
