@@ -144,13 +144,11 @@ const AdminDashboardPage = () => {
         <StatCard title="Total Users" value={stats.totalUsers} icon={{ name: 'fa-users', bgColor: '#3B82F6' }} />
         <StatCard title="New Users Today" value={stats.newUsersToday} icon={{ name: 'fa-user-plus', bgColor: '#10B981' }} />
         <StatCard title="Total Investment Volume" value={formattedVolume} icon={{ name: 'fa-coins', bgColor: '#F59E0B' }} />
-        <Link href="/admin/redemptions?status=pending" className="transition-transform transform hover:scale-105 block">
-            <StatCard 
+        <StatCard 
                 title="Pending Redemptions" 
                 value={stats.pendingRedemptions} 
                 icon={{ name: 'fa-box-open', bgColor: '#EF4444' }} 
             />
-        </Link>
       </div>
 
       <div className={styles.widgetsGrid}>

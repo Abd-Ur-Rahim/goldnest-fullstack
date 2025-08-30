@@ -306,16 +306,6 @@ const AdminManagementPage = () => {
                             ))}
                         </ul>
                     </div>
-                    <div className={styles.card}>
-                        <h2 className={styles.cardTitle}>Recent Admin Actions</h2>
-                        <ul className={styles.list}>
-                            {actionLogs.map(log => (
-                                <li key={log._id} className={styles.listItem}>
-                                    {/* ... action log item ... */}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
                 </div>
             </div>
             
