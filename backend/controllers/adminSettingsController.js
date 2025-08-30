@@ -67,23 +67,23 @@ const addGoldPriceEntry = async (req, res) => {
 
     try {
         const dateStr = new Date(date).toISOString().split('T')[0];
-        await appendPriceToCsv(date, parseFloat(price));
+        
+        // <-- FIX: Changed appendPriceToCsv to the correct function, savePriceToDb
+        await savePriceToDb(dateStr, parseFloat(price));
 
-        // Log this action
         await logAdminAction(
             req.admin,
             'Added gold price entry',
-            { type: 'Database' }, // <-- FIX: Changed audit type from CSV to Database.
+            { type: 'Database' },
             { date: dateStr, price }
         );
 
-        res.status(201).json({ message: `Successfully added price for ${date}.` });
+        res.status(201).json({ message: `Successfully added price for ${dateStr} to the database.` });
     } catch (error) {
         console.error("Error adding price entry to database:", error);
-        // <-- FIX: Updated error message.
         res.status(500).json({ message: 'Failed to write to the database.' });
     }
-};
+}
 module.exports = {
 getSettings,
 updateSettings,
