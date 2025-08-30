@@ -23,9 +23,10 @@ const goldPriceSchema = new mongoose.Schema({
     type: Number
   }
 }, {
-  // Automatically add 'createdAt' and 'updatedAt' fields.
-  // This is a best practice for tracking when records are created or modified.
-  timestamps: true,
+  timestamps: false,
+  
+  // <-- FIX: Set versionKey to false to remove the __v field
+  versionKey: false,
   collection: 'goldprices'
 });
 
