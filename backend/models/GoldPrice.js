@@ -5,19 +5,22 @@ const mongoose = require('mongoose');
 // Define the schema for the historical gold price data.
 // This acts as a blueprint for how data will be stored in the 'goldprices' collection.
 const goldPriceSchema = new mongoose.Schema({
-  date: {
+  Date: {
     type: Date,
     required: true,
     unique: true, // Ensures you don't have duplicate entries for the same day.
     index: true   // Improves performance for any queries filtering or sorting by date.
   },
-  lkrPerOz: {
+  LKR_per_Oz: {
     type: Number,
     required: true
   },
   lkrPerGram: {
     type: Number,
-    required: true
+    required: false
+  },
+  LKR_per_XAU_Inverse: {
+    type: Number
   }
 }, {
   // Automatically add 'createdAt' and 'updatedAt' fields.

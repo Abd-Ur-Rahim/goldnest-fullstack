@@ -24,7 +24,7 @@ const savePriceToDb = async (dateStr, pricePerGramLKR) => {
 
         // Find a document with this date and update it, or create it if it doesn't exist (upsert: true)
         await GoldPrice.findOneAndUpdate(
-            { date: recordDate }, // The query to find the document.
+            { Date: recordDate }, // The query to find the document.
             { // The data to set on the document.
                 $set: {
                     LKR_per_Oz: pricePerOz,
