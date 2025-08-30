@@ -22,7 +22,8 @@ const goldPriceSchema = new mongoose.Schema({
 }, {
   // Automatically add 'createdAt' and 'updatedAt' fields.
   // This is a best practice for tracking when records are created or modified.
-  timestamps: true
+  timestamps: true,
+  collection: 'goldprices'
 });
 
 // Create the Mongoose model from the schema.

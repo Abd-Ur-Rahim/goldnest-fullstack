@@ -54,7 +54,7 @@ const savePriceToDb = async (dateStr, pricePerGramLKR) => {
 async function loadGoldData() {
     try {
         // Fetch records from MongoDB, sort by date descending, and use .lean() for performance.
-        const records = await GoldPrice.find({}).sort({ date: -1 }).lean();
+        const records = await GoldPrice.find({}).sort({ Date: -1 }).lean();
 
         if (!records || records.length === 0) {
             console.warn('No valid gold data found in MongoDB.');
@@ -64,8 +64,8 @@ async function loadGoldData() {
         // Map the database records to the structure expected by the summary function.
         // This keeps the analysis logic separate from the data source structure.
         return records.map(r => ({
-            DateObj: r.date,
-            DateStr: r.date.toISOString().split('T')[0], // 'YYYY-MM-DD'
+            DateObj: r.Date,
+            DateStr: r.Date.toISOString().split('T')[0], // 'YYYY-MM-DD'
             LKR_per_Oz: r.lkrPerOz
         }));
     } catch (error) {
