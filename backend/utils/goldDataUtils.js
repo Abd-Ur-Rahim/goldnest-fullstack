@@ -24,10 +24,10 @@ const savePriceToDb = async (dateStr, pricePerGramLKR) => {
 
         // Find a document with this date and update it, or create it if it doesn't exist (upsert: true)
         await GoldPrice.findOneAndUpdate(
-            { date: recordDate }, // The query to find the document.
+            { Date: recordDate }, // The query to find the document.
             { // The data to set on the document.
                 $set: {
-                    lkrPerOz: pricePerOz,
+                    LKR_per_Oz: pricePerOz,
                     lkrPerGram: pricePerGramLKR,
                 }
             },
@@ -66,7 +66,7 @@ async function loadGoldData() {
         return records.map(r => ({
             DateObj: r.Date,
             DateStr: r.Date.toISOString().split('T')[0], // 'YYYY-MM-DD'
-            LKR_per_Oz: r.lkrPerOz
+            LKR_per_Oz: r.LKR_per_Oz
         }));
     } catch (error) {
         console.error('Error loading gold data from MongoDB:', error);
