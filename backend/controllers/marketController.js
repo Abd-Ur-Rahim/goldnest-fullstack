@@ -5,9 +5,9 @@ const { getFeeConfig } = require('../utils/feeUtils'); // <-- IMPORT getFeeConfi
 // @desc    Get latest gold market summary (price, change, etc.)
 // @route   GET /api/market/gold-summary
 // @access  Public (market data is public)
-const getGoldSummary = (req, res) => {
+const getGoldSummary =async (req, res) => {
     try {
-        const summary = getGoldMarketSummary();
+        const summary =await getGoldMarketSummary();
         res.json(summary);
     } catch (error) {
         console.error("Error getting gold market summary:", error);
@@ -19,9 +19,9 @@ const getGoldSummary = (req, res) => {
 // @desc    Get all historical gold data for charting
 // @route   GET /api/market/historical-data
 // @access  Public
-const getHistoricalGoldData = (req, res) => {
+const getHistoricalGoldData = async (req, res) => {
     try {
-        const allData = loadGoldData(); // This loads and sorts the data (newest first)
+        const allData =await loadGoldData(); // This loads and sorts the data (newest first)
         
         // Reverse the data so it's chronological for charting (oldest first)
         const chronologicalData = [...allData].reverse();

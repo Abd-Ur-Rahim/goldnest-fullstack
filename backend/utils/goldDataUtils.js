@@ -78,6 +78,10 @@ async function loadGoldData() {
  * Generates a comprehensive market summary using data from MongoDB.
  * @returns {Promise<Object>} A promise that resolves to the market summary object.
  */
+async function getRecentGoldData(days = 7) {
+    const allData = await loadGoldData();
+    return allData.slice(0, days);
+}
 async function getGoldMarketSummary() {
     const allData = await loadGoldData();
 
@@ -159,5 +163,6 @@ async function getGoldMarketSummary() {
 module.exports = {
     savePriceToDb,
     loadGoldData,
+    getRecentGoldData,
     getGoldMarketSummary,
 };

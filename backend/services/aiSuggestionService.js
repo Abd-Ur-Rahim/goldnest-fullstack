@@ -8,8 +8,8 @@ const MODEL = "llama3-70b-8192";
 
 // Helper function to format data for the prompt
 function formatDataForPrompt(data) {
-    if (!data || data.length === 0) return "No recent data available.";
-    return data.map(d => `${d.Date}: ${d.LKR_per_Oz.toFixed(2)} LKR/Oz`).join('\n');
+    if (!Array.isArray(data) || data.length === 0) return "No recent data available.";
+    return data.map(d => `${d.DateStr}: ${d.LKR_per_Oz.toFixed(2)} LKR/Oz`).join('\n');
 }
 
 // --- Helper Function to Summarize User Data ---
@@ -42,7 +42,7 @@ function summarizeUserData(user) {
 async function getInvestmentTimingSuggestion(user) {
     if (!groq) return "AI service not available.";
 
-    const recentMarketData = getRecentGoldData(7);
+    const recentMarketData = await getRecentGoldData(7);
     if (!recentMarketData || recentMarketData.length === 0) {
         console.error("Error or no data from getRecentGoldData for timing suggestion.");
         return "Could not retrieve recent gold data.";
@@ -74,7 +74,7 @@ async function getInvestmentTimingSuggestion(user) {
 async function getMonthlyGrowthForecast() {
     if (!groq) return "AI service not available.";
 
-    const recentData = getRecentGoldData(30);
+    const recentData = await getRecentGoldData(30);
     if (!recentData || recentData.length === 0) {
         console.error("Error or no data from getRecentGoldData for monthly forecast.");
         return "Could not retrieve recent gold data.";
@@ -120,7 +120,7 @@ async function getMonthlyGrowthForecast() {
 async function getDashboardOverviewSuggestion(user) {
     if (!groq) return "AI service not available.";
 
-    const recentMarketData = getRecentGoldData(14);
+    const recentMarketData =await getRecentGoldData(14);
     if (!recentMarketData || recentMarketData.length === 0) {
         console.error("Error or no data from getRecentGoldData for dashboard overview.");
         return "Could not retrieve recent gold data.";
@@ -153,7 +153,7 @@ async function getDashboardOverviewSuggestion(user) {
 async function getPriceTrendSummary() {
     if (!groq) return "AI service not available.";
 
-    const recentData = getRecentGoldData(7);
+    const recentData = await getRecentGoldData(7);
     if (!recentData || recentData.length === 0) {
         console.error("Error or no data from getRecentGoldData for trend summary.");
         return "Could not retrieve recent gold data.";
@@ -185,8 +185,8 @@ async function getPriceTrendSummary() {
 async function getMarketOutlookSuggestion() {
     if (!groq) return "AI service not available.";
 
-    const recentData = getRecentGoldData(30); // Use last 30 days for context
-    const summary = getGoldMarketSummary(); // Get latest stats
+    const recentData = await getRecentGoldData(30); // Use last 30 days for context
+    const summary = await getGoldMarketSummary(); // Get latest stats
 
     if (!recentData || recentData.length === 0) {
         console.error("Error or no data from getRecentGoldData for market outlook.");
