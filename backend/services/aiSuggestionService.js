@@ -4,7 +4,7 @@ const { getRecentGoldData, getGoldMarketSummary } = require('../utils/goldDataUt
 
 const groqApiKey = process.env.GROQ_API_KEY;
 const groq = groqApiKey ? new Groq({ apiKey: groqApiKey }) : null;
-const MODEL = "llama3-70b-8192";
+const MODEL = "llama-3.1-70b-versatile";
 
 // Helper function to format data for the prompt
 function formatDataForPrompt(data) {
