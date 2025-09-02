@@ -54,7 +54,14 @@ const savePriceToDb = async (dateStr, pricePerGramLKR) => {
 async function loadGoldData() {
     try {
         // Fetch records from MongoDB, sort by date descending, and use .lean() for performance.
-        const records = await GoldPrice.find({}).sort({ Date: -1 }).lean();
+        const today = new Date();
+        today.setUTCHours(23, 59, 59, 999);
+
+        // Fetch records from MongoDB where the date is less than or equal to today,
+        // sorted by date descending. .lean() is used for performance.
+        const records = await GoldPrice.find({ Date: { $lte: today } })
+            .sort({ Date: -1 })
+            .lean();
 
         if (!records || records.length === 0) {
             console.warn('No valid gold data found in MongoDB.');
