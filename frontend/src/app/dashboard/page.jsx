@@ -70,9 +70,6 @@ const formatCurrency = (value) => {
     maximumFractionDigits: 2,
   })}`;
 };
-
-// src/app/dashboard/page.jsx
-
 const formatDate = (dateString) => {
   if (!dateString) return '';
   try {
