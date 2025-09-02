@@ -205,7 +205,7 @@ async function getMarketOutlookSuggestion() {
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userPrompt },
             ],
-            model: "llama3-70b-8192",
+            model: "MODEL,
             temperature: 0.5,
             max_tokens: 120,
         });
