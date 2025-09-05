@@ -2,9 +2,29 @@
 const cron = require('node-cron');
 const priceAlertService = require('./services/priceAlertService');
 const autoPaymentService = require('./services/autoPaymentService'); // <-- IMPORTED
+const { fetchAndStoreGoldPrice } = require('./controllers/adminSettingsController');
 
 console.log('Scheduler initializing...');
 
+// --- Schedule Gold Price Scraping at specific times ---
+// Cron format: minute hour * * *
+// '0 0,3,6,10,15,18 * * *' runs at 12:00 AM, 3:00 AM, 6:00 AM, 10:00 AM, 3:00 PM (15), and 6:00 PM (18).
+// cron.schedule('0 0,3,6,10,15,18 * * *', async () => {
+//     console.log(`[${new Date().toISOString()}] Running Gold Price Scraping job...`);
+//     try {
+//         await fetchAndStoreGoldPrice();
+//     } catch (error) 
+//         console.error(`[${new Date().toISOString()}] Error running Gold Price Scraping job:`, error);
+//     }
+// });
+cron.schedule('*/120 * * * *', async () => {
+    console.log(`[${new Date().toISOString()}] Running Gold Price Scraping job...`);
+    try {
+        await fetchAndStoreGoldPrice();
+    } catch (error) {
+        console.error(`[${new Date().toISOString()}] Error running Gold Price Scraping job:`, error);
+    }
+});
 // --- Schedule Price Alert Check (e.g., every 15 minutes) ---
 // Cron format: second minute hour day-of-month month day-of-week
 // '*/15 * * * *' = run every 15 minutes
@@ -46,10 +66,3 @@ cron.schedule('0 2 * * *', async () => { // <-- Set desired schedule (e.g., '0 2
 
 
 console.log('Scheduler initialized. Cron jobs scheduled.');
-
-// Optional: Export functions if you need to manually trigger jobs for testing
-// module.exports = {
-//     manuallyTriggerPriceCheck: priceAlertService.checkPriceAlerts,
-//     manuallyTriggerAutoPayment: autoPaymentService.executeScheduledPayments
-//     // Add more triggers as needed
-// };

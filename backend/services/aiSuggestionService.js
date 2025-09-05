@@ -4,7 +4,7 @@ const { getRecentGoldData, getGoldMarketSummary } = require('../utils/goldDataUt
 
 const groqApiKey = process.env.GROQ_API_KEY;
 const groq = groqApiKey ? new Groq({ apiKey: groqApiKey }) : null;
-const MODEL = "llama3-70b-8192";
+const MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
 
 // Helper function to format data for the prompt
 function formatDataForPrompt(data) {
@@ -205,7 +205,7 @@ async function getMarketOutlookSuggestion() {
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userPrompt },
             ],
-            model: "llama3-70b-8192",
+            model: MODEL,
             temperature: 0.5,
             max_tokens: 120,
         });

@@ -70,22 +70,11 @@ const formatCurrency = (value) => {
     maximumFractionDigits: 2,
   })}`;
 };
-
 const formatDate = (dateString) => {
   if (!dateString) return '';
   try {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
-    const diffMinutes = Math.round(diffSeconds / 60);
-    const diffHours = Math.round(diffMinutes / 60);
-    const diffDays = Math.round(diffHours / 24);
-
-    if (diffSeconds < 60) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
+    // Always format the date to the "Month Day" format (e.g., "Aug 29")
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch {
     return '';

@@ -1,9 +1,11 @@
 // backend/controllers/adminSettingsController.js
-const Setting = require('../models/Setting'); // <-- The single, correct import
-const { savePriceToDb } = require('../utils/goldDataUtils'); 
+const Setting = require('../models/Setting');
+const { savePriceToDb } = require('../utils/goldDataUtils');
 const { invalidateFeeCache } = require('../utils/feeUtils');
 const { logAdminAction } = require('../services/auditLogService');
-// A helper to get all settings at once
+const { scrapeGoldPrice } = require('../utils/scraper');
+const TROY_OZ_TO_GRAMS = 31.1034768;
+// getSettings, updateSettings, and addGoldPriceEntry functions remain unchanged.
 const getSettings = async (req, res) => {
     try {
         const settings = await Setting.find({});
@@ -17,12 +19,10 @@ const getSettings = async (req, res) => {
         res.status(500).json({ message: "Error fetching settings." });
     }
 };
-// --- UPDATED to include UNDO logging ---
+
 const updateSettings = async (req, res) => {
-// We remove confirmationPassword from the object so it's not saved as a setting
-const { confirmationPassword, ...settingsToUpdate } = req.body;
+    const { confirmationPassword, ...settingsToUpdate } = req.body;
     try {
-    // Fetch the old settings values BEFORE updating, for the undo log
         const keysToUpdate = Object.keys(settingsToUpdate);
         const oldSettings = await Setting.find({ key: { $in: keysToUpdate } });
         const undoData = oldSettings.reduce((acc, setting) => {
@@ -30,9 +30,8 @@ const { confirmationPassword, ...settingsToUpdate } = req.body;
             return acc;
         }, {});
 
-        // Perform the updates
         const updatePromises = Object.entries(settingsToUpdate).map(([key, value]) => {
-        const parsedValue = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
+            const parsedValue = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
             return Setting.findOneAndUpdate(
                 { key },
                 { value: parsedValue },
@@ -41,24 +40,23 @@ const { confirmationPassword, ...settingsToUpdate } = req.body;
         });
         await Promise.all(updatePromises);
 
-        // Log the admin action, now including the old values in undoData
         await logAdminAction(
             req.admin, 
             'Updated platform settings', 
             { type: 'Setting' }, 
             { updatedKeys: keysToUpdate },
-            undoData // <-- Pass the old values for the undo feature
+            undoData
         );
 
         invalidateFeeCache();
         res.json({ message: 'Settings updated successfully.' });
 
     } catch (error) {
-    console.error("Error updating settings:", error);
-    res.status(500).json({ message: "Error updating settings." });
+        console.error("Error updating settings:", error);
+        res.status(500).json({ message: "Error updating settings." });
     }
 };
-// --- UPDATED to include audit logging ---
+
 const addGoldPriceEntry = async (req, res) => {
     const { date, price } = req.body;
     if (!date || !price || isNaN(parseFloat(price))) {
@@ -67,8 +65,6 @@ const addGoldPriceEntry = async (req, res) => {
 
     try {
         const dateStr = new Date(date).toISOString().split('T')[0];
-        
-        // <-- FIX: Changed appendPriceToCsv to the correct function, savePriceToDb
         await savePriceToDb(dateStr, parseFloat(price));
 
         await logAdminAction(
@@ -83,9 +79,34 @@ const addGoldPriceEntry = async (req, res) => {
         console.error("Error adding price entry to database:", error);
         res.status(500).json({ message: 'Failed to write to the database.' });
     }
-}
+};
+
+// --- THIS IS THE CORRECTED FUNCTION ---
+const fetchAndStoreGoldPrice = async () => {
+    console.log('Attempting to fetch and store gold price from external source...');
+    const scrapedData = await scrapeGoldPrice();
+
+    // The check is now correct: it only looks for a valid 'price' property.
+    if (scrapedData && typeof scrapedData.price === 'number' && !isNaN(scrapedData.price)) {
+        try {
+            // We create TODAY'S date here, as per your instructions.
+            const todayString = new Date().toISOString().split('T')[0];
+            const latestPrice = scrapedData.price/TROY_OZ_TO_GRAMS;
+
+            // This function saves the price to the database under today's date.
+            await savePriceToDb(todayString, latestPrice);
+            console.log(`Controller successfully saved price for TODAY (${todayString}): ${latestPrice}`);
+        } catch (error) {
+            console.error('Error saving scraped gold price to the database:', error.message);
+        }
+    } else {
+        console.log('Could not scrape new gold price data, or data was invalid. No action taken.');
+    }
+};
+
 module.exports = {
-getSettings,
-updateSettings,
-addGoldPriceEntry,
+    getSettings,
+    updateSettings,
+    addGoldPriceEntry,
+    fetchAndStoreGoldPrice,
 };
