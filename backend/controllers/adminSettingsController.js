@@ -3,6 +3,7 @@ const Setting = require('../models/Setting'); // <-- The single, correct import
 const { savePriceToDb } = require('../utils/goldDataUtils'); 
 const { invalidateFeeCache } = require('../utils/feeUtils');
 const { logAdminAction } = require('../services/auditLogService');
+const { scrapeGoldPrice } = require('../utils/scraper');
 // A helper to get all settings at once
 const getSettings = async (req, res) => {
     try {
@@ -84,8 +85,26 @@ const addGoldPriceEntry = async (req, res) => {
         res.status(500).json({ message: 'Failed to write to the database.' });
     }
 }
+const fetchAndStoreGoldPrice = async () => {
+    console.log('Attempting to fetch and store gold price from external source...');
+    const scrapedData = await scrapeGoldPrice();
+
+    if (scrapedData && scrapedData.date && !isNaN(scrapedData.price)) {
+        try {
+            // savePriceToDb will handle checking if the price for the date already exists
+            await savePriceToDb(scrapedData.date, scrapedData.price);
+            console.log(`Scraper successfully saved gold price for ${scrapedData.date}: ${scrapedData.price}`);
+        } catch (error) {
+            // This might catch errors from savePriceToDb, e.g., if a duplicate is found and not handled
+            console.error('Error saving scraped gold price to the database:', error.message);
+        }
+    } else {
+        console.log('Could not scrape new gold price data, or data was invalid. No action taken.');
+    }
+};
 module.exports = {
 getSettings,
 updateSettings,
 addGoldPriceEntry,
+fetchAndStoreGoldPrice,
 };
