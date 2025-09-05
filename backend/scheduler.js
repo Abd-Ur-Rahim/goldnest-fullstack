@@ -2,14 +2,22 @@
 const cron = require('node-cron');
 const priceAlertService = require('./services/priceAlertService');
 const autoPaymentService = require('./services/autoPaymentService'); // <-- IMPORTED
-const { fetchAndStoreGoldPrice } = require('../controllers/adminSettingsController');
+const { fetchAndStoreGoldPrice } = require('./controllers/adminSettingsController');
 
 console.log('Scheduler initializing...');
 
 // --- Schedule Gold Price Scraping at specific times ---
 // Cron format: minute hour * * *
 // '0 0,3,6,10,15,18 * * *' runs at 12:00 AM, 3:00 AM, 6:00 AM, 10:00 AM, 3:00 PM (15), and 6:00 PM (18).
-cron.schedule('0 0,3,6,10,15,18 * * *', async () => {
+// cron.schedule('0 0,3,6,10,15,18 * * *', async () => {
+//     console.log(`[${new Date().toISOString()}] Running Gold Price Scraping job...`);
+//     try {
+//         await fetchAndStoreGoldPrice();
+//     } catch (error) 
+//         console.error(`[${new Date().toISOString()}] Error running Gold Price Scraping job:`, error);
+//     }
+// });
+cron.schedule('*/120 * * * *', async () => {
     console.log(`[${new Date().toISOString()}] Running Gold Price Scraping job...`);
     try {
         await fetchAndStoreGoldPrice();
