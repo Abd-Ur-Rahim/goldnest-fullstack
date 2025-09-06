@@ -1,260 +1,239 @@
 'use client';
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Chart, registerables } from 'chart.js';
+import 'chartjs-adapter-date-fns';
+import axios from 'axios';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import styles from '../Marketinternal/MarketInternal.module.css'; // <-- IMPORT THE NEW CSS MODULE
 
 Chart.register(...registerables);
 
-export default function MarketPage() {
-  const [activeTab, setActiveTab] = useState('goldPriceChartContent');
-  const goldCanvasRef = useRef(null);
-  const inflationCanvasRef = useRef(null);
-  const goldChartRef = useRef(null);
-  const inflationChartRef = useRef(null);
-  const simulationInterval = useRef(null);
+// --- Helper Functions ---
+const formatCurrency = (value) => {
+    if (value === null || isNaN(value)) return 'N/A';
+    return `Rs. ${value.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
 
-  // Historical Labels
-  const initialLabels = [
-    "2/5", "2/6", "2/7", "2/10", "2/11", "2/13", "2/14", "2/17", "2/18", "2/19",
-    "2/20", "2/21", "2/24", "2/25", "2/27", "2/28", "3/3", "3/4", "3/5", "3/6",
-    "3/7", "3/10", "3/11", "3/12", "3/14", "3/17", "3/18", "3/19", "3/20", "3/21",
-    "3/24", "3/25", "3/26", "3/27", "3/28", "4/1", "4/2", "4/3", "4/4"
-  ];
+const formatPercent = (value) => {
+    if (value === null || isNaN(value)) return 'N/A';
+    return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+};
 
-  // Initial Gold Prices
-  const initialGold = [
-    27414, 27593, 27520, 27503, 28120, 27771, 27915, 27522, 27508, 27929,
-    28023, 28008, 27911, 28051, 27698, 27321, 27250, 27398, 27601, 27750,
-    27617, 27666, 27529, 27716, 28359, 28420, 28642, 28837, 29056, 28944,
-    28812, 28716, 28852, 28855, 29304, 29933, 29832, 29984, 29645
-  ];
+// --- Main Component ---
+export default function MarketInternalPage() {
+    // State
+    const [marketSummary, setMarketSummary] = useState(null);
+    const [historicalData, setHistoricalData] = useState({ labels: [], prices: [] });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [timeRange, setTimeRange] = useState('1Y'); // Default time range (1Y, 3M, 1M, All)
 
-  // Initial Inflation (simulated)
-  const initialInflation = (() => {
-    let data = [];
-    let current = 850;
-    for (let i = 0; i < initialGold.length; i++) {
-      data.push(current);
-      current += (Math.random() - 0.49) * current * 0.001;
-      current = Math.max(500, current);
-    }
-    return data;
-  })();
+    // Chart Refs
+    const chartCanvasRef = useRef(null);
+    const chartInstanceRef = useRef(null);
 
-  // Data Refs (live simulation)
-  const labels = useRef([...initialLabels]);
-  const goldData = useRef([...initialGold]);
-  const inflationData = useRef([...initialInflation]);
+    // Data Fetching
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
-  // Simulation logic
-  const simulateGold = (last) => {
-    const r = Math.random();
-    const delta = r < 0.65 ? 0.0005 : r < 0.9 ? (Math.random() - 0.5) * 0.0001 : -Math.random() * 0.0003;
-    return Math.max(20000, last * (1 + delta));
-  };
+    // Extract fetching logic into function
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [summaryRes, historyRes, outlookRes] = await Promise.all([
+                axios.get(`${backendUrl}/api/market/gold-summary`),
+                axios.get(`${backendUrl}/api/market/historical-data`),
+                axios.get(`${backendUrl}/api/ai/market-outlook`),
+            ]);
+            setMarketSummary(summaryRes.data);
+            setHistoricalData(historyRes.data);
+            setAiOutlook('AI analysis available after login .');
+            setError('');
+        } catch (err) {
+            console.error('Error fetching market data:', err);
+            setError('Failed to load market data. Please try refreshing.');
+        } finally {
+            setLoading(false);
+        }
+    }, [backendUrl]);
 
-  const simulateInflation = (last) => {
-    return Math.max(500, last + (Math.random() - 0.48) * last * 0.0005);
-  };
+    useEffect(() => {
+        fetchData(); // Initial fetch
 
-  // Setup Charts ONCE
-  useEffect(() => {
-    if (!goldChartRef.current && goldCanvasRef.current) {
-      const ctx = goldCanvasRef.current.getContext('2d');
-      goldChartRef.current = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [...labels.current],
-          datasets: [{
-            label: 'Gold Exchange Rate (Rs/g)',
-            data: [...goldData.current],
-            borderColor: 'rgb(248, 182, 18)',
-            backgroundColor: 'rgba(248, 182, 18, 0.2)',
-            fill: true,
-            tension: 0.1,
-            pointRadius: 0,
-            pointHoverRadius: 5,
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false,
-          interaction: { mode: 'nearest', intersect: false },
-          scales: {
-            y: {
-              beginAtZero: false,
-              title: { display: true, text: 'Exchange Rate (Rs/g)' }
+        // Set up interval for periodic fetching
+        const intervalId = setInterval(() => {
+            fetchData();
+        }, 600000); // 30 seconds
+
+        // Cleanup on unmount
+        return () => clearInterval(intervalId);
+    }, [fetchData]);
+
+    // Chart Rendering Logic
+    const renderChart = useCallback(() => {
+        if (!chartCanvasRef.current || historicalData.labels.length === 0) return;
+
+        const ctx = chartCanvasRef.current.getContext('2d');
+        if (chartInstanceRef.current) {
+            chartInstanceRef.current.destroy();
+        }
+
+        const allLabels = historicalData.labels.map(label => new Date(label));
+        const allPrices = historicalData.prices;
+        
+        let filteredLabels = allLabels;
+        let filteredPrices = allPrices;
+
+        const now = new Date();
+        let startDate;
+
+        switch (timeRange) {
+            case '1M':
+                startDate = new Date(new Date().setMonth(now.getMonth() - 1));
+                break;
+            case '3M':
+                startDate = new Date(new Date().setMonth(now.getMonth() - 3));
+                break;
+            case '1Y':
+                startDate = new Date(new Date().setFullYear(now.getFullYear() - 1));
+                break;
+            case 'All':
+            default:
+                startDate = new Date(allLabels[0]);
+                break;
+        }
+
+        const startIndex = allLabels.findIndex(label => label >= startDate);
+        if (startIndex !== -1) {
+            filteredLabels = allLabels.slice(startIndex);
+            filteredPrices = allPrices.slice(startIndex);
+        }
+
+        chartInstanceRef.current = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: filteredLabels,
+                datasets: [{
+                    label: 'Gold Price (LKR/gram)',
+                    data: filteredPrices,
+                    borderColor: '#F8B612',
+                    backgroundColor: 'rgba(248, 182, 18, 0.1)',
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                }]
             },
-            x: {
-              title: { display: true, text: 'Date / Time' }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { unit: 'month' },
+                        grid: { display: false },
+                    },
+                    y: {
+                        ticks: {
+                            callback: value => `Rs. ${value.toLocaleString()}`
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: (context) => `Price: ${formatCurrency(context.parsed.y)}`
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
             }
-          },
-          plugins: {
-            legend: { display: true, position: 'top' },
-            tooltip: { animation: false }
-          }
-        }
-      });
+        });
+    }, [historicalData, timeRange]);
+
+    useEffect(() => {
+        renderChart();
+    }, [renderChart]);
+
+    const renderMetricCard = (label, value, change) => (
+        <div className={styles.metricCard}>
+            <p className={styles.metricLabel}>{label}</p>
+            <p className={styles.metricValue}>{value}</p>
+            {change !== null && (
+                <p className={`${styles.metricChange} ${change >= 0 ? styles.positive : styles.negative}`}>
+                    {change >= 0 ? '▲' : '▼'} {formatPercent(change)}
+                </p>
+            )}
+        </div>
+    );
+
+    if (loading) {
+        return (
+            <>
+                <Navbar />
+                <main className={styles.pageWrapper}>
+                    <p className="text-center">Loading market data...</p>
+                </main>
+                <Footer />
+            </>
+        );
+    }
+    if (error) {
+         return (
+            <>
+                <Navbar />
+                <main className={`${styles.pageWrapper} text-red-500 text-center`}>
+                    <p>{error}</p>
+                </main>
+                <Footer />
+            </>
+        );
     }
 
-    if (!inflationChartRef.current && inflationCanvasRef.current) {
-      const ctx = inflationCanvasRef.current.getContext('2d');
-      inflationChartRef.current = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [...labels.current],
-          datasets: [
-            {
-              label: 'Inflation (Simulated Index)',
-              data: [...inflationData.current],
-              borderColor: 'rgb(255, 99, 132)',
-              backgroundColor: 'rgba(255, 99, 132, 0.2)',
-              fill: false,
-              tension: 0.2,
-              pointRadius: 0,
-              pointHoverRadius: 5,
-              borderWidth: 2,
-              yAxisID: 'yInflation'
-            },
-            {
-              label: 'Gold Exchange Rate (Rs/g)',
-              data: [...goldData.current],
-              borderColor: 'rgb(248, 182, 18)',
-              backgroundColor: 'rgba(248, 182, 18, 0.2)',
-              fill: true,
-              tension: 0.1,
-              pointRadius: 0,
-              pointHoverRadius: 5,
-              borderWidth: 2,
-              yAxisID: 'yGold'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false,
-          interaction: { mode: 'nearest', intersect: false },
-          stacked: false,
-          scales: {
-            yInflation: {
-              type: 'linear',
-              position: 'left',
-              title: { display: true, text: 'Inflation Index (Simulated)' }
-            },
-            yGold: {
-              type: 'linear',
-              position: 'right',
-              title: { display: true, text: 'Gold Exchange Rate (Rs/g)' },
-              beginAtZero: false,
-              grid: { drawOnChartArea: false }
-            },
-            x: {
-              title: { display: true, text: 'Date / Time' }
-            }
-          },
-          plugins: {
-            legend: { display: true, position: 'top' },
-            tooltip: { animation: false }
-          }
-        }
-      });
-    }
+    return (
+        <>
+            <Navbar />
+            <main className={styles.pageWrapper}>
+                <div className={styles.header}>
+                    <h1 className={styles.title}>Gold Market Overview</h1>
+                </div>
 
-    // Start the simulation once
-    if (!simulationInterval.current) {
-      simulationInterval.current = setInterval(() => {
-        const now = new Date().toLocaleTimeString();
-        const newGold = simulateGold(goldData.current[goldData.current.length - 1]);
-        const newInflation = simulateInflation(inflationData.current[inflationData.current.length - 1]);
+                {/* Metric Cards */}
+                <div className={styles.metricCardGrid}>
+                    {renderMetricCard("Latest Price/g", formatCurrency(marketSummary?.latestPricePerGram), null)}
+                    {renderMetricCard("24h Change", formatPercent(marketSummary?.priceChangePercent), marketSummary?.priceChangePercent)}
+                    {renderMetricCard("7d Change", formatPercent(marketSummary?.weeklyChangePercent), marketSummary?.weeklyChangePercent)}
+                    {renderMetricCard("30d Change", formatPercent(marketSummary?.monthlyChangePercent), marketSummary?.monthlyChangePercent)}
+                </div>
 
-        labels.current.push(now);
-        goldData.current.push(newGold);
-        inflationData.current.push(newInflation);
+                {/* Chart Section */}
+                <div className={styles.chartCard}>
+                    <div className={styles.chartControls}>
+                        <span className={styles.timeRangeLabel}>Time Range:</span>
+                        {['1M', '3M', '1Y', 'All'].map(range => (
+                            <button
+                                key={range}
+                                onClick={() => setTimeRange(range)}
+                                className={`${styles.timeRangeButton} ${timeRange === range ? styles.timeRangeButtonActive : styles.timeRangeButtonInactive}`}
+                            >
+                                {range}
+                            </button>
+                        ))}
+                    </div>
+                    <div className={styles.chartContainer}>
+                        <canvas ref={chartCanvasRef}></canvas>
+                    </div>
+                </div>
+            </main>
+            <Footer />
+        </>
+    );
 
-        if (labels.current.length > 60) {
-          labels.current.shift();
-          goldData.current.shift();
-          inflationData.current.shift();
-        }
-
-        // Update Gold chart
-        if (goldChartRef.current) {
-          goldChartRef.current.data.labels = [...labels.current];
-          goldChartRef.current.data.datasets[0].data = [...goldData.current];
-          goldChartRef.current.update('none');
-        }
-
-        // Update Inflation chart
-        if (inflationChartRef.current) {
-          inflationChartRef.current.data.labels = [...labels.current];
-          inflationChartRef.current.data.datasets[0].data = [...inflationData.current];
-          inflationChartRef.current.data.datasets[1].data = [...goldData.current];
-          inflationChartRef.current.update('none');
-        }
-      }, 3000);
-    }
-
-    return () => {
-      if (simulationInterval.current) {
-        clearInterval(simulationInterval.current);
-        simulationInterval.current = null;
-      }
-    };
-  }, []);
-
-  return (
-    <>
-      <Navbar activePage="market" />
-      <main className="static-page-padding">
-        <section className="market-section content-container">
-          <h2>Market Overview</h2>
-
-          <div className="chart-tabs">
-            <button
-              className={`tab-button ${activeTab === 'goldPriceChartContent' ? 'active' : ''}`}
-              onClick={() => setActiveTab('goldPriceChartContent')}
-            >
-              Gold Price (Simulated)
-            </button>
-            <button
-              className={`tab-button ${activeTab === 'inflationChartContent' ? 'active' : ''}`}
-              onClick={() => setActiveTab('inflationChartContent')}
-            >
-              Inflation vs Gold (Simulated)
-            </button>
-          </div>
-
-          <div className="chart-display-area">
-            <div
-              style={{ display: activeTab === 'goldPriceChartContent' ? 'block' : 'none' }}
-              className="chart-content"
-            >
-              <div className="chart-container">
-                <canvas ref={goldCanvasRef} id="goldPriceCanvas"></canvas>
-              </div>
-            </div>
-
-            <div
-              style={{ display: activeTab === 'inflationChartContent' ? 'block' : 'none' }}
-              className="chart-content"
-            >
-              <div className="chart-container">
-                <canvas ref={inflationCanvasRef} id="inflationCanvas"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <p className="chart-disclaimer">
-            Note: Charts display SIMULATED data for demonstration purposes and do not reflect real-time market values. Past performance is not indicative of future results.
-          </p>
-        </section>
-      </main>
-      <Footer />
-    </>
-  );
 }
