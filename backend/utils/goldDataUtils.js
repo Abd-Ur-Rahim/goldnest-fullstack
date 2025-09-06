@@ -28,7 +28,6 @@ const savePriceToDb = async (dateStr, pricePerGramLKR) => {
             { // The data to set on the document.
                 $set: {
                     LKR_per_Oz: pricePerOz,
-                    LKR_per_XAU_Inverse:0,
                 }
             },
             {

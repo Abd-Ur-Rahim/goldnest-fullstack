@@ -19,9 +19,6 @@ const goldPriceSchema = new mongoose.Schema({
     type: Number,
     required: false
   },
-  LKR_per_XAU_Inverse: {
-    type: Number
-  }
 }, {
   timestamps: false,
   
