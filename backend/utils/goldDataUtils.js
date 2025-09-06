@@ -3,7 +3,7 @@
 const GoldPrice = require('../models/GoldPrice'); // Import the Mongoose model
 
 // --- Constants ---
-const TROY_OZ_TO_GRAMS = 31.1034768;
+const TROY_OZ_TO_GRAMS = 28.3474643423;
 const PREDICTION_DAYS = 5;
 
 // ===================================================================================
