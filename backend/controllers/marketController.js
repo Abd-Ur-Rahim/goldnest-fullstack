@@ -1,7 +1,7 @@
 // backend/controllers/marketController.js
 const { getGoldMarketSummary, loadGoldData } = require('../utils/goldDataUtils');
 const { getFeeConfig } = require('../utils/feeUtils'); // <-- IMPORT getFeeConfig
-
+const TROY_OZ_TO_GRAMS = 28.3474643423;
 // @desc    Get latest gold market summary (price, change, etc.)
 // @route   GET /api/market/gold-summary
 // @access  Public (market data is public)
@@ -28,7 +28,7 @@ const getHistoricalGoldData = async (req, res) => {
 
         // Format data for Chart.js
         const labels = chronologicalData.map(d => d.DateStr);
-        const prices = chronologicalData.map(d => d.LKR_per_Oz / 31.1034768); // Convert to price per gram
+        const prices = chronologicalData.map(d => d.LKR_per_Oz /TROY_OZ_TO_GRAMS); // Convert to price per gram
 
         res.json({ labels, prices });
     } catch (error) {
