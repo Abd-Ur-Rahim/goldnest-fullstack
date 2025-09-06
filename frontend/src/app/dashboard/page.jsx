@@ -88,7 +88,7 @@ const formatGrams = (value, decimals = 3) => {
   return `${value.toFixed(decimals)}g`;
 };
 
-const TROY_OZ_TO_GRAMS = 31.1034768;
+const TROY_OZ_TO_GRAMS = 28.3474643423;
 
 export default function DashboardPage() {
   // --- State ---

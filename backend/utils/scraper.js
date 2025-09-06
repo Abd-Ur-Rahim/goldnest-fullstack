@@ -3,93 +3,87 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 
+/**
+ * Scrapes the latest "Gold Ounce" price from ideabeam.com.
+ * This final version correctly handles the interactive table by:
+ * 1. Waiting for the table's JavaScript to initialize.
+ * 2. Selecting "100" from the entries dropdown to ensure all data is visible.
+ * 3. Waiting for the table to redraw.
+ * 4. Scraping the first row for today's value.
+ */
 const scrapeGoldPrice = async () => {
     let browser = null;
     let page = null;
     console.log('[Scraper] Launching browser...');
     try {
         browser = await puppeteer.launch({
-            headless: true,
+            headless: true, // It's often helpful to set this to false when debugging
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         
         page = await browser.newPage();
-        const url = 'https://www.cbsl.gov.lk/en/rates-and-indicators/exchange-rates/daily-gold-rates';
-        
+
+        // Mimic a real browser to prevent being blocked
+        await page.setUserAgent(
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+        );
+
+        const url = 'https://www.ideabeam.com/finance/rates/goldprice.php'; 
         console.log(`[Scraper] Navigating to ${url}...`);
         await page.goto(url, { waitUntil: 'networkidle2' });
 
-        // --- FINAL, CORRECTED LOGIC WITH IFRAME HANDLING ---
+        // --- INTERACTIVE SCRAPING LOGIC ---
 
-        // STEP 1: Find the iframe that contains the form.
-        const iframeSelector = 'iframe[src="/cbsl_custom/exrates/exratesgold.php"]';
-        console.log(`[Scraper] Waiting for the form iframe ("${iframeSelector}")...`);
-        await page.waitForSelector(iframeSelector, { timeout: 20000 });
-        const elementHandle = await page.$(iframeSelector);
-        
-        // Switch the scraper's context to the content inside the iframe.
-        const frame = await elementHandle.contentFrame();
-        if (!frame) {
-            throw new Error('Could not get the content frame of the iframe.');
-        }
-        console.log('[Scraper] Successfully switched context to inside the iframe.');
+        // STEP 1: Wait for the table's controls (the dropdown) to be visible.
+        // This confirms that the DataTable JavaScript has finished running.
+        const dropdownSelector = 'select[name="DataTables_Table_0_length"]';
+        console.log(`[Scraper] Waiting for the entries dropdown ("${dropdownSelector}")...`);
+        await page.waitForSelector(dropdownSelector, { visible: true, timeout: 30000 });
+        console.log('[Scraper] Dropdown found.');
 
-        // ALL SUBSEQUENT ACTIONS ARE PERFORMED ON THE 'frame' OBJECT.
+        // STEP 2: Select '100' from the dropdown to show all entries.
+        await page.select(dropdownSelector, '100');
+        console.log('[Scraper] Selected "100" from the dropdown.');
 
-        // STEP 2: Find and click the "Quick Date" radio button inside the iframe.
-        const radioSelector = 'input#rangeType_range';
-        console.log(`[Scraper] Inside iframe, waiting for "Quick Date" radio button ("${radioSelector}")...`);
-        await frame.waitForSelector(radioSelector, { visible: true, timeout: 15000 });
-        await frame.click(radioSelector);
-        console.log('[Scraper] Clicked the "Quick Date" radio button.');
+        // STEP 3: Wait for the table to update. A brief pause is often the simplest way.
+        // A more robust method would be to wait for the "Showing 1 to 100" text, but a small delay works here.
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for redraw
+        console.log('[Scraper] Waited for table to redraw.');
 
-        // STEP 3: Find the dropdown inside the iframe and select "60 days".
-        const dropdownSelector = 'select#rangeValue';
-        console.log(`[Scraper] Inside iframe, waiting for dropdown ("${dropdownSelector}")...`);
-        await frame.waitForSelector(dropdownSelector, { visible: true, timeout: 10000 });
-        await frame.select(dropdownSelector, '60');
-        console.log('[Scraper] Selected "60 days" from the dropdown.');
+        // STEP 4: Scrape the data from the first row of the now-visible table.
+        const tableSelector = 'table.datatable';
+        console.log(`[Scraper] Extracting data from the first row of "${tableSelector}"...`);
 
-        // STEP 4: Click the submit button inside the iframe.
-        const submitButtonSelector = 'button[type="submit"], input[type="submit"]'; // General submit selector
-        console.log('[Scraper] Inside iframe, clicking submit...');
-        // The form submission reloads the content within the iframe.
-        await Promise.all([
-            frame.click(submitButtonSelector),
-            frame.waitForNavigation({ waitUntil: 'networkidle2' }) 
-        ]);
-        console.log('[Scraper] Iframe has reloaded with the data table.');
-
-        // STEP 5: Find the table inside the iframe and extract the price.
-        const resultsTableSelector = 'table.table';
-        console.log('[Scraper] Inside iframe, waiting for results table...');
-        await frame.waitForSelector(resultsTableSelector, { timeout: 10000 });
-        console.log('[Scraper] Results table found. Extracting data...');
-
-        const latestPriceData = await frame.evaluate((tableSel) => {
-            const table = document.querySelector(tableSel);
+        const latestPriceData = await page.evaluate((sel) => {
+            const table = document.querySelector(sel);
             if (!table) return null;
+
             const firstRow = table.querySelector('tbody tr');
             if (!firstRow) return null;
-            const priceText = firstRow.cells[1]?.innerText.trim();
+            
+            // The "Gold Ounce" price is in the second column (index 1).
+            const priceCell = firstRow.cells[1];
+            const priceText = priceCell?.innerText.trim();
+
             if (priceText) {
-                const price = parseFloat(priceText.replace(/,/g, ''));
+                const price = parseFloat(priceText.replace(/Rs\.\s*|,/g, ''));
                 return { price };
             }
+            
             return null;
-        }, resultsTableSelector);
+        }, tableSelector);
 
         if (latestPriceData && !isNaN(latestPriceData.price)) {
-            console.log(`[Scraper] SUCCESS! Found most recent available price: ${latestPriceData.price}`);
+            console.log(`[Scraper] SUCCESS! Found today's Gold Ounce price: ${latestPriceData.price}`);
             return latestPriceData;
         } else {
-            throw new Error('Could not find or parse the price from the table inside the iframe.');
+            throw new Error('Could not find or parse the "Gold Ounce" price after interacting with the page.');
         }
 
     } catch (error) {
         console.error('[Scraper] FATAL ERROR during scraping process:', error.message);
         if (page) {
-            const screenshotPath = path.join(__dirname, '..', 'error.png');
+            const screenshotPath = path.resolve(__dirname, '..', 'error_screenshot.png');
             console.log(`[Scraper] Saving screenshot of the error page to: ${screenshotPath}`);
             await page.screenshot({ path: screenshotPath, fullPage: true });
         }
