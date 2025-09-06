@@ -7,7 +7,7 @@ import 'chartjs-adapter-date-fns';
 import axios from 'axios';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import styles from '../Marketinternal/MarketInternal.module.css'; // <-- IMPORT THE NEW CSS MODULE
+import styles from '../marketinternal/MarketInternal.module.css'; // <-- IMPORT THE NEW CSS MODULE
 
 Chart.register(...registerables);
 
