@@ -4,7 +4,7 @@ const { savePriceToDb } = require('../utils/goldDataUtils');
 const { invalidateFeeCache } = require('../utils/feeUtils');
 const { logAdminAction } = require('../services/auditLogService');
 const { scrapeGoldPrice } = require('../utils/scraper');
-const TROY_OZ_TO_GRAMS = 28.3474643423;
+const TROY_OZ_TO_GRAMS = 31.1034768;
 // getSettings, updateSettings, and addGoldPriceEntry functions remain unchanged.
 const getSettings = async (req, res) => {
     try {
