@@ -47,7 +47,6 @@ export default function MarketInternalPage() {
             ]);
             setMarketSummary(summaryRes.data);
             setHistoricalData(historyRes.data);
-            setAiOutlook('AI analysis available after login .');
             setError('');
         } catch (err) {
             console.error('Error fetching market data:', err);
@@ -231,6 +230,7 @@ export default function MarketInternalPage() {
                         <canvas ref={chartCanvasRef}></canvas>
                     </div>
                 </div>
+                <div><p>AI analysis available after login .</p></div>
             </main>
             <Footer />
         </>
