@@ -17,7 +17,7 @@ console.log('Scheduler initializing...');
 //         console.error(`[${new Date().toISOString()}] Error running Gold Price Scraping job:`, error);
 //     }
 // });
-cron.schedule('*/15 * * * *', async () => {
+cron.schedule('*/120 * * * *', async () => {
     console.log(`[${new Date().toISOString()}] Running Gold Price Scraping job...`);
     try {
         await fetchAndStoreGoldPrice();
